@@ -1,0 +1,128 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  SubnetParameter:
+    Type: String
+    Default: 'subnet-05d2a07cb78b1745a'
+    AllowedValues:
+      - 'subnet-05d2a07cb78b1745a'
+      - 'subnet-068d751348b98cf1e'
+    Description: Choose Subnet 1a - 451, 1b - f1e
+Resources:
+  Master:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      SubnetId: !Ref SubnetParameter
+      ImageId: ami-08523c5075ba75813
+      InstanceType: t2.micro
+      KeyName: vikTech
+      SecurityGroupIds: 
+        - sg-0db8e0fe5b518f6fb
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 10
+      Tags:
+        -
+          Key: profile
+          Value: vik
+        -
+          Key: Name
+          Value: Master
+      UserData: 
+          !Base64 |
+          #!/bin/bash
+          sudo yum update -y
+          sudo yum install wget -y
+          wget https://github.com/prometheus/prometheus/releases/download/v2.23.0/prometheus-2.23.0.linux-amd64.tar.gz
+          wget https://github.com/prometheus/node_exporter/releases/download/v1.0.1/node_exporter-1.0.1.linux-amd64.tar.gz
+          tar -xvf prometheus*.tar.gz
+          tar -xvf node_exporter*.tar.gz
+          cat <<EOF | sudo tee /etc/yum.repos.d/grafana.repo
+          [grafana]
+          name=grafana
+          baseurl=https://packages.grafana.com/oss/rpm
+          repo_gpgcheck=1
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://packages.grafana.com/gpg.key
+          sslverify=1
+          sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+          EOF
+          sudo dnf -y install grafana
+          sudo systemctl enable --now grafana-server.service
+  
+  preprod:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      SubnetId: !Ref SubnetParameter
+      ImageId: ami-08523c5075ba75813
+      InstanceType: t2.micro
+      KeyName: vikTech
+      SecurityGroupIds: 
+        - sg-0db8e0fe5b518f6fb
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 10
+      Tags:
+        -
+          Key: profile
+          Value: vik
+        -
+          Key: Name
+          Value: PreProd
+      UserData: 
+          !Base64 |
+          #!/bin/bash
+          sudo yum update -y
+          sudo yum install wget -y
+          wget https://github.com/prometheus/node_exporter/releases/download/v1.0.1/node_exporter-1.0.1.linux-amd64.tar.gz
+          tar -xvf node_exporter*.tar.gz
+          sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+          sudo dnf install docker-ce-3:19.03.13-3.el8 -y
+          sudo systemctl start docker
+          curl -L "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-$(uname -s)-$(uname -m)" -o docker-compose
+          sudo mv docker-compose /usr/local/bin && sudo chmod +x /usr/local/bin/docker-compose
+  
+  prod:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      SubnetId: !Ref SubnetParameter
+      ImageId: ami-08523c5075ba75813
+      InstanceType: t2.micro
+      KeyName: vikTech
+      SecurityGroupIds: 
+        - sg-0db8e0fe5b518f6fb
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 10
+      Tags:
+        -
+          Key: profile
+          Value: vik
+        -
+          Key: Name
+          Value: Prod
+      UserData: 
+          !Base64 |
+          #!/bin/bash
+          sudo yum update -y
+          sudo yum install wget -y
+          wget https://github.com/prometheus/node_exporter/releases/download/v1.0.1/node_exporter-1.0.1.linux-amd64.tar.gz
+          tar -xvf node_exporter*.tar.gz
+          sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+          sudo dnf install docker-ce-3:19.03.13-3.el8 -y
+          sudo systemctl start docker
+          curl -L "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-$(uname -s)-$(uname -m)" -o docker-compose
+          sudo mv docker-compose /usr/local/bin && sudo chmod +x /usr/local/bin/docker-compose
+
+Outputs:
+  MasterIP:
+    Value: !GetAtt Master.PublicIp
+  
+  preprodIP:
+    Value: !GetAtt preprod.PublicIp
+  
+  prodIP:
+    Value: !GetAtt prod.PublicIp

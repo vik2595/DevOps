@@ -1,0 +1,172 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  SubnetParameter:
+    Type: String
+    Default: 'subnet-05d2a07cb78b1745a'
+    AllowedValues:
+      - 'subnet-05d2a07cb78b1745a'
+      - 'subnet-068d751348b98cf1e'
+    Description: Choose Subnet 1a - 45a, 1b - f1e
+Resources:
+  KubeMaster:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      SubnetId: !Ref SubnetParameter
+      ImageId: ami-02e44367276fe7adc
+      InstanceType: t2.medium
+      KeyName: vikTech
+      SecurityGroupIds: 
+        - sg-0db8e0fe5b518f6fb
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 20
+      Tags:
+        -
+          Key: profile
+          Value: vik
+        -
+          Key: Name
+          Value: KubeMaster
+      UserData: 
+          !Base64 |
+          #!/bin/bash
+          sudo apt-get update -y
+          curl -fsSL https://get.docker.com -o get-docker.sh
+          sudo sh get-docker.sh
+          sudo usermod -aG docker ubuntu
+          cat > /etc/docker/daemon.json <<EOF
+          {
+            "exec-opts": ["native.cgroupdriver=systemd"],
+            "log-driver": "json-file",
+            "log-opts": {
+              "max-size": "100m"
+            },
+            "storage-driver": "overlay2"
+          }
+          EOF
+          sudo systemctl restart docker
+          sudo apt-get update && sudo apt-get install -y apt-transport-https curl
+          curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+          cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+          deb https://apt.kubernetes.io/ kubernetes-xenial main
+          EOF
+          sudo apt-get update -y
+          sudo apt-get install -y kubelet kubeadm kubectl
+          sudo apt-mark hold kubelet kubeadm kubectl
+          sudo hostnamectl set-hostname master
+          sudo systemctl daemon-reload
+          sudo systemctl restart kubelet
+          sudo mkdir ~/Kubemaster
+  
+  KubeNode1:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      SubnetId: !Ref SubnetParameter
+      ImageId: ami-02e44367276fe7adc
+      InstanceType: t2.micro
+      KeyName: vikTech
+      SecurityGroupIds: 
+        - sg-0db8e0fe5b518f6fb
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 8
+      Tags:
+        -
+          Key: profile
+          Value: vik
+        -
+          Key: Name
+          Value: KubeNode1
+      UserData: 
+          !Base64 |
+          #!/bin/bash
+          sudo apt-get update -y
+          curl -fsSL https://get.docker.com -o get-docker.sh
+          sudo sh get-docker.sh
+          sudo usermod -aG docker ubuntu
+          cat > /etc/docker/daemon.json <<EOF
+          {
+            "exec-opts": ["native.cgroupdriver=systemd"],
+            "log-driver": "json-file",
+            "log-opts": {
+              "max-size": "100m"
+            },
+            "storage-driver": "overlay2"
+          }
+          EOF
+          sudo systemctl restart docker
+          sudo apt-get update && sudo apt-get install -y apt-transport-https curl
+          curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+          cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+          deb https://apt.kubernetes.io/ kubernetes-xenial main
+          EOF
+          sudo apt-get update -y
+          sudo apt-get install -y kubelet kubeadm kubectl
+          sudo apt-mark hold kubelet kubeadm kubectl
+          sudo hostnamectl set-hostname node1
+          sudo systemctl daemon-reload
+          sudo systemctl restart kubelet
+          sudo mkdir ~/KubeNode
+
+  KubeNode2:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      SubnetId: !Ref SubnetParameter
+      ImageId: ami-02e44367276fe7adc
+      InstanceType: t2.micro
+      KeyName: vikTech
+      SecurityGroupIds: 
+        - sg-0db8e0fe5b518f6fb
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 8
+      Tags:
+        -
+          Key: profile
+          Value: vik
+        -
+          Key: Name
+          Value: KubeNode2
+      UserData: 
+          !Base64 |
+          #!/bin/bash
+          sudo apt-get update -y
+          curl -fsSL https://get.docker.com -o get-docker.sh
+          sudo sh get-docker.sh
+          sudo usermod -aG docker ubuntu
+          cat > /etc/docker/daemon.json <<EOF
+          {
+            "exec-opts": ["native.cgroupdriver=systemd"],
+            "log-driver": "json-file",
+            "log-opts": {
+              "max-size": "100m"
+            },
+            "storage-driver": "overlay2"
+          }
+          EOF
+          sudo systemctl restart docker
+          sudo apt-get update && sudo apt-get install -y apt-transport-https curl
+          curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+          cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+          deb https://apt.kubernetes.io/ kubernetes-xenial main
+          EOF
+          sudo apt-get update -y
+          sudo apt-get install -y kubelet kubeadm kubectl
+          sudo apt-mark hold kubelet kubeadm kubectl
+          sudo hostnamectl set-hostname node2
+          sudo systemctl daemon-reload
+          sudo systemctl restart kubelet
+          sudo mkdir ~/KubeNode2
+          
+Outputs:
+  KubeMasterIP:
+    Value: !GetAtt KubeMaster.PublicIp
+
+  Node1IP:
+    Value: !GetAtt KubeNode1.PublicIp
+  
+  Node2IP:
+    Value: !GetAtt KubeNode2.PublicIp

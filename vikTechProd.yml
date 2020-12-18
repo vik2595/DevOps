@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  SubnetParameter:
+    Type: String
+    Default: 'subnet-05d2a07cb78b1745a'
+    AllowedValues:
+      - 'subnet-05d2a07cb78b1745a'
+      - 'subnet-068d751348b98cf1e'
+    Description: Choose Subnet 1a - 45a, 1b - f1e,
+Resources:
+  Prod:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      SubnetId: !Ref SubnetParameter
+      ImageId: ami-0c9bfc21ac5bf10eb
+      InstanceType: t2.micro
+      KeyName: vikTech
+      SecurityGroupIds: 
+        - sg-0db8e0fe5b518f6fb
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 8
+      Tags:
+        -
+          Key: profile
+          Value: vik
+        -
+          Key: Name
+          Value: Prod
+      UserData: 
+          !Base64 |
+          #!/bin/bash
+          sudo yum update
+          sudo yum install java-1.8.0-openjdk-devel -y
+          sudo yum install git -y
+          sudo yum install amazon-cloudwatch-agent -y
+          sudo yun install docker -y
+          sudo curl -L "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+          [kubernetes]
+          name=Kubernetes
+          baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+          enabled=1
+          gpgcheck=1
+          repo_gpgcheck=1
+          gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+          exclude=kubelet kubeadm kubectl
+          EOF
+          sudo setenforce 0
+          sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+          sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+          sudo systemctl enable --now kubelet
+          sudo systemctl daemon-reload
+          sudo systemctl restart kubelet
+  
+Outputs:
+  PublicIp:
+    Value:
+      Fn::GetAtt:
+        - Prod
+        - PublicIp
+    Description: Server's PublicIp Address

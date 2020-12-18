@@ -1,0 +1,76 @@
+pipeline {
+    agent any
+
+    tools {
+        git 'gitJenkins'
+        maven 'Maven 3.6.3'
+    }
+
+    environment {
+    //Use Pipeline Utility Steps plugin to read information from pom.xml into env variables
+    VERSION = readMavenPom().getVersion()
+    }
+
+    stages {
+        stage('Initialize') {
+            steps {
+                sh '''
+                    echo "PATH = ${PATH}"
+                    echo "M2_HOME = ${M2_HOME}"
+                '''
+            }
+        }
+
+        stage('Git Commits') {
+            steps {
+            git branch: 'master',
+                credentialsId: 'github',
+                url: 'git@github.com:vik2595/webapp.git'
+            }
+            post {
+                success {
+                sh 'echo Commit successful'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+            withMaven {
+                sh "mvn clean package"
+            }
+            }
+            post {
+                success {
+                sh 'echo Build successful'
+                }
+            }
+        }
+
+        stage('Artifact Upload'){
+            steps {
+            nexusArtifactUploader artifacts: 
+            [
+                [
+                    artifactId: 'WebApp', 
+                    classifier: '', 
+                    file: 'target\\WebApp.war', 
+                    type: 'war'
+                ]
+            ], 
+            credentialsId: 'nexus', 
+            groupId: 'com.vikTech', 
+            nexusUrl: '15.222.235.240:8081', 
+            nexusVersion: 'nexus3', 
+            protocol: 'http', 
+            repository: 'webapp-release', 
+            version: "${env.VERSION}"
+            }
+            post {
+                success {
+                sh 'echo everything successful'
+                }
+            }
+        }
+    }
+}

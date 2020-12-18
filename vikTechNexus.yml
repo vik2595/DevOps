@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  SubnetParameter:
+    Type: String
+    Default: 'subnet-05d2a07cb78b1745a'
+    AllowedValues:
+      - 'subnet-05d2a07cb78b1745a'
+      - 'subnet-068d751348b98cf1e'
+      - 'subnet-0273aaccb8d6199dd'
+    Description: Choose Subnet 1a - 451, 1b - f1e, 1d - 9dd
+Resources:
+  Nexus:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      SubnetId: !Ref SubnetParameter
+      ImageId: ami-0c9bfc21ac5bf10eb
+      InstanceType: t2.micro
+      KeyName: vikTech
+      SecurityGroupIds: 
+        - sg-0db8e0fe5b518f6fb
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 8
+      Tags:
+        -
+          Key: profile
+          Value: vik
+        -
+          Key: Name
+          Value: Nexus
+      UserData: 
+          !Base64 |
+          #!/bin/bash
+          sudo yum update
+          sudo yum install java-1.8.0-openjdk-devel -y
+          sudo yum install amazon-cloudwatch-agent -y
+          cd /opt
+          wget https://sonatype-download.global.ssl.fastly.net/nexus/3/nexus-3.0.2-02-unix.tar.gz
+          tar -zxvf  nexus-3.0.2-02-unix.tar.gz
+
+  
+Outputs:
+  PublicIp:
+    Value:
+      Fn::GetAtt:
+        - Nexus
+        - PublicIp
+    Description: Server's PublicIp Address

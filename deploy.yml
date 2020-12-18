@@ -1,0 +1,12 @@
+---
+- hosts: webservers
+  become: true
+  tasks:
+    - name: Copy war to server
+      - maven_artifact:
+          group_id: com.vikTech
+          artifact_id: WebApp
+          repository_url: 'http://15.222.235.240:8081/repository/maven-releases/'
+          username: admin
+          password: admin123 
+          dest: /var/www/html/

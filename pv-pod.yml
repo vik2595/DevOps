@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tomcat
+  namespcae : tomcat
+spec:
+  volumes:
+    - name: tomcat-pv-storage
+      persistentVolumeClaim:
+        claimName: tomcat-pv-claim
+  containers:
+    - name: tomcat
+      image: vik2595/tomcat:1.0
+      ports:
+        - containerPort: 8080
+          name: "http-server"
+      volumeMounts:
+        - mountPath: "/home/ubuntu/tmp"
+          name: tomcat-pv-storage
